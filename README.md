@@ -1,18 +1,17 @@
 # Spores-to-Genomics
 
-# Kraken2 SLURM Pipeline
+# Kraken2 
 
 SLURM batch scripts for running Kraken2 taxonomic classification on HPC clusters.
 
 ## Scripts
 
-### kraken2_array.sh
+### kraken2_array
 Performs paired-end Kraken2 classification using SLURM array jobs.
 
 **Requirements:**
-- SLURM job scheduler
 - Kraken2 installed
-- Kraken2 database (standard database in this example)
+- Kraken2 database (standard database in this project)
 - Input: Paired-end FASTQ files in `02_TRIMMED/` directory
 - Sample names in `sample_names.txt` file
 
