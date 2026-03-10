@@ -8,8 +8,7 @@ Scripts for running metagenomic analysis including Kraken2 taxonomic classificat
 Performs paired-end Kraken2 classification using SLURM array jobs.
 
 **Requirements:**
-- SLURM job scheduler
-- Kraken2 installed
+- Kraken2 installed--used the one in Puhti
 - Kraken2 database (standard database)
 - Input: Paired-end FASTQ files in `02_TRIMMED/` directory
 
@@ -19,7 +18,7 @@ sbatch kraken2_array.sh
 ```
 
 **Parameters:**
-- Time limit: 12 hours
+- Time limit: 12 hours--depends on your sample number/size
 - CPUs per task: 8
 - Memory: 76GB
 - Array range: 1-9
@@ -28,13 +27,13 @@ sbatch kraken2_array.sh
 - Classification outputs: `03_KRAKEN_NEW/kraken_outputs/`
 - Reports: `03_KRAKEN_NEW/kraken_reports/`
 
+#You can check your Kraken2 results with Krona it is also in Puhti module biokit
 ---
 
 ### bracken_array.sh
 Estimates relative abundance of species/genus using Bracken.
 
 **Requirements:**
-- SLURM job scheduler
 - Bracken installed
 - Kraken2 database with Bracken database files
 - Input: Kraken2 report files from `kraken2_array.sh`
@@ -61,7 +60,6 @@ sbatch bracken_array.sh
 Performs functional annotation using DIAMOND against the MeMaGe functional genes database.
 
 **Requirements:**
-- SLURM job scheduler
 - DIAMOND installed
 - DIAMOND formatted database (MeMaGe funcgenes.dmnd)
 - Input: Paired-end trimmed FASTQ files in `02_TRIMMED/` directory
@@ -220,11 +218,10 @@ sbatch filter_trace_gas_thr.sh
 ---
 
 ### megahit_array.sh
-Performs metagenomic assembly using MEGAHIT on paired-end reads using SLURM array jobs.
+Performs metagenomic assembly using MEGAHIT on paired-end reads.
 
 **Requirements:**
-- SLURM job scheduler
-- MEGAHIT installed
+- MEGAHIT installed--used version 2.17, 2.18 is not working properly in Puhti
 - Input: Paired-end trimmed FASTQ files in `02_TRIMMED/` directory
 - Local scratch space available (`$LOCAL_SCRATCH`)
 
@@ -262,7 +259,7 @@ sbatch megahit_array.sh
 ---
 
 ### quast_array.sh
-Performs quality assessment of assembled contigs using QUAST on SLURM array jobs.
+Performs quality assessment of assembled contigs using QUAST.
 
 **Requirements:**
 - SLURM job scheduler
@@ -306,7 +303,7 @@ sbatch quast_array.sh
 ## Complete Workflow
 
 ```
-Step 1: Quality Trimming (external tool)
+Step 1: Quality Trimming 
     ↓
 Step 2: Kraken2 Taxonomic Classification
     sbatch kraken2_array.sh
