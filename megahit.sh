@@ -9,7 +9,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=nvme:500
-#SBATCH --array=1-9
+#SBATCH --array=4-9
 
 cd /scratch/project_2014298/oztunaim/META
 
