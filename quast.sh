@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --partition=small
-#SBATCH --array=1-9
+#SBATCH --array=4-9
 
 module load quast
 
