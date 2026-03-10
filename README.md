@@ -27,7 +27,7 @@ sbatch kraken2_array.sh
 - Classification outputs: `03_KRAKEN_NEW/kraken_outputs/`
 - Reports: `03_KRAKEN_NEW/kraken_reports/`
 
-#You can check your Kraken2 results with Krona it is also in Puhti module biokit
+You can check your Kraken2 results with Krona it is also in Puhti module biokit
 ---
 
 ### bracken_array.sh
@@ -218,7 +218,7 @@ sbatch filter_trace_gas_thr.sh
 ---
 
 ### megahit_array.sh
-Performs metagenomic assembly using MEGAHIT on paired-end reads.
+Performs metagenomic assembly using MEGAHIT on paired-end reads. Starts from IR4 to IR9
 
 **Requirements:**
 - MEGAHIT installed--used version 2.17, 2.18 is not working properly in Puhti
