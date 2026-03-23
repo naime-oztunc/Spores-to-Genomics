@@ -10,9 +10,6 @@
 #SBATCH --error=00_LOGS/gtdbtk_%A_%a.err
 #SBATCH --gres=nvme:500
 
-set -euo pipefail
-
-module purge
 module load gtdbtk
 
 BASE=/scratch/project_2014298/oztunaim/META
