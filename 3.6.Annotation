@@ -1,0 +1,85 @@
+#!/bin/bash -l
+#SBATCH --job-name=annotate_isolates
+#SBATCH --account=project_2014298
+#SBATCH --time=12:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+#SBATCH --partition=small
+#SBATCH --array=1-7
+#SBATCH --output=10_ANNOTATION/LOGS/annotate_%A_%a.out
+#SBATCH --error=10_ANNOTATION/LOGS/annotate_%A_%a.err
+
+cd /scratch/project_2014298/oztunaim/WGS
+
+# Create directories
+mkdir -p 10_ANNOTATION/LOGS
+
+# Load environment
+export PATH="/projappl/project_2014298/tykky_bakta/bin:$PATH"
+
+# Read sample name
+SAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" sample_names.txt)
+echo "Processing isolate: $SAMPLE"
+echo ""
+
+# Set paths
+ASSEMBLY="05_AUTOCYCLER/${SAMPLE}_autocycler/consensus_assembly.fasta"
+BAKTA_OUT="10_ANNOTATION/bakta/${SAMPLE}"
+BAKTA_DB="/scratch/project_2014298/oztunaim/BAKTA_DB/db"
+THREADS=8
+
+# Verify assembly exists
+if [ ! -f "$ASSEMBLY" ]; then
+    echo "ERROR: Assembly not found: $ASSEMBLY"
+    exit 1
+fi
+
+echo "Assembly: $ASSEMBLY"
+echo "Contigs: $(grep -c '^>' $ASSEMBLY)"
+echo ""
+
+echo "STEP 1: Running Bakta annotation..."
+echo "Start time: $(date)"
+echo ""
+
+bakta \
+  --db $BAKTA_DB \
+  --output $BAKTA_OUT \
+  --prefix ${SAMPLE} \
+  --threads $THREADS \
+  --verbose \
+  --complete \
+  --min-contig-length 200 \
+  --keep-contig-headers \
+  $ASSEMBLY
+
+if [ $? -eq 0 ]; then
+    echo "Bakta annotation completed"
+else
+    echo "Bakta annotation failed"
+    exit 1
+fi
+
+echo ""
+
+  
+echo "STEP 2: Summarizing results..."
+echo ""
+
+echo "=== BAKTA SUMMARY ==="
+if [ -f "$BAKTA_OUT/${SAMPLE}.txt" ]; then
+    cat $BAKTA_OUT/${SAMPLE}.txt
+fi
+
+echo ""
+echo "=== ANNOTATION STATISTICS ==="
+GFF="$BAKTA_OUT/${SAMPLE}.gff3"
+if [ -f "$GFF" ]; then
+    echo "CDS: $(grep -c 'CDS' $GFF)"
+    echo "tRNA: $(grep -c 'tRNA' $GFF)"
+    echo "rRNA: $(grep -c 'rRNA' $GFF)"
+fi
+
+echo ""
+
+
