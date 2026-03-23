@@ -15,17 +15,6 @@ cd /scratch/project_2014298/oztunaim/WGS
 # Create directories
 mkdir -p 13_GTDBTK/{00_LOGS,individual_results,genomes}
 
-echo "============================================"
-echo "GTDB-Tk Taxonomic Classification - Isolates"
-echo "Job started at: $(date)"
-echo "Array task ID: $SLURM_ARRAY_TASK_ID"
-echo "Node: $SLURMD_NODENAME"
-echo "============================================"
-echo ""
-
-#==============================================
-# SETUP
-#==============================================
 
 # Read sample name
 SAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" sample2_names.txt)
@@ -68,9 +57,7 @@ echo "GTDB-Tk version:"
 gtdbtk --version
 echo ""
 
-#==============================================
-# STEP 1: Run GTDB-Tk Classification
-#==============================================
+
 echo "STEP 1: Running GTDB-Tk classify_wf..."
 echo "Start time: $(date)"
 echo ""
@@ -95,9 +82,7 @@ fi
 echo "End time: $(date)"
 echo ""
 
-#==============================================
-# STEP 2: Parse and Summarize Results
-#==============================================
+
 echo "STEP 2: Parsing classification results..."
 echo ""
 
@@ -207,9 +192,7 @@ fi
 # Display summary
 cat $OUTPUT_SUMMARY
 
-#==============================================
-# STEP 3: Create Simple Output Files
-#==============================================
+
 echo "STEP 3: Creating simplified output files..."
 
 # Create simple taxonomy file
@@ -228,9 +211,7 @@ cp $OUTDIR/${SAMPLE}_taxonomy.tsv 13_GTDBTK/${SAMPLE}_taxonomy.tsv
 echo "  Copied results to main directory"
 echo ""
 
-#==============================================
-# STEP 4: Cleanup
-#==============================================
+
 echo "STEP 4: Cleanup..."
 
 # Remove temporary genome directory
@@ -244,28 +225,5 @@ if [ -d "$OUTDIR/align" ]; then
 fi
 
 echo "  Cleanup complete"
-echo ""
 
-#==============================================
-# COMPLETION
-#==============================================
-echo "============================================"
-echo "GTDB-Tk Complete for $SAMPLE!"
-echo "Job finished at: $(date)"
-echo "============================================"
-echo ""
-echo "Results:"
-echo "  Main summary:     13_GTDBTK/${SAMPLE}_summary.txt"
-echo "  GTDB-Tk output:   13_GTDBTK/${SAMPLE}_gtdbtk_summary.tsv"
-echo "  Simple taxonomy:  13_GTDBTK/${SAMPLE}_taxonomy.tsv"
-echo "  Full results:     $OUTDIR/"
-echo ""
-echo "Quick classification:"
-echo "  $CLASSIFICATION"
-echo ""
 
-# Check for novel species
-if [ ! -z "$FASTANI_ANI" ] && (( $(echo "$FASTANI_ANI < 95.0" | bc -l) )); then
-    echo "POTENTIAL NOVEL SPECIES DETECTED!"
-    echo ""
-fi
