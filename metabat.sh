@@ -1,0 +1,37 @@
+#!/bin/bash -l
+#SBATCH --job-name=metabat_IR
+#SBATCH --account=project_2014298
+#SBATCH --output=00_LOGS/metabat_IR_%A_%a.out
+#SBATCH --error=00_LOGS/metabat_IR_%A_%a.err
+#SBATCH --time=06:00:00
+#SBATCH --partition=small
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=40G
+#SBATCH --array=5-9
+
+SAMPLE=IR${SLURM_ARRAY_TASK_ID}
+
+BASE=/scratch/project_2014298/oztunaim/META
+CONTIGS=${BASE}/06_ASSEMBLY/MEGAHIT/02_CONTIGS/${SAMPLE}.contigs_gt1000.fa
+BAM=${BASE}/07_MAPPING/03_BAM_FILT/${SAMPLE}.sorted.calmd.bam
+OUTDIR=${BASE}/09_BINNING/METABAT/${SAMPLE}
+
+mkdir -p ${OUTDIR}
+
+module load metabat/2.17
+module load samtools
+
+
+jgi_summarize_bam_contig_depths \
+  --outputDepth ${OUTDIR}/${SAMPLE}.depth.txt \
+  ${BAM}
+
+metabat2 \
+  -i ${CONTIGS} \
+  -a ${OUTDIR}/${SAMPLE}.depth.txt \
+  -o ${OUTDIR}/${SAMPLE}_bin \
+  -t ${SLURM_CPUS_PER_TASK}
+
+echo "MetaBAT2 binning finished for ${SAMPLE}"

@@ -1,0 +1,121 @@
+#!/bin/bash -l
+#SBATCH --job-name=bowtie2_map_array
+#SBATCH --account=project_2014298
+#SBATCH --output=06_ASSEMBLY/LOGS/bowtie2_map_array_out_%A_%a.txt
+#SBATCH --error=06_ASSEMBLY/LOGS/bowtie2_map_array_err_%A_%a.txt
+#SBATCH --time=08:00:00
+#SBATCH --partition=small
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=10G
+#SBATCH --array=1-9
+
+BASE=/scratch/project_2014298/oztunaim/META
+TRIM=$BASE/02_TRIMMED
+ASM=$BASE/06_ASSEMBLY/MEGAHIT
+MAP=$BASE/07_MAPPING
+
+# Get sample name from sample_names.txt
+SAMPLE=$(sed -n ${SLURM_ARRAY_TASK_ID}p sample_names.txt)
+
+cd $BASE
+
+module load bowtie2
+module load samtools
+
+echo "[$(date)] Starting mapping for sample: $SAMPLE on $(hostname)"
+
+# Create mapping directories
+mkdir -p $MAP/01_INDEX
+mkdir -p $MAP/03_BAM_FILT
+mkdir -p $ASM/02_CONTIGS
+
+# CHECK FILES EXIST BEFORE RUNNING
+echo "[$(date)] Checking for required files..."
+
+if [[ ! -f "$ASM/$SAMPLE/${SAMPLE}.contigs.fa" ]]; then
+    echo "[$(date)] ERROR: Contigs file not found: $ASM/$SAMPLE/${SAMPLE}.contigs.fa" >&2
+    exit 1
+fi
+
+if [[ ! -f "$TRIM/${SAMPLE}_R1.fastq.gz" ]]; then
+    echo "[$(date)] ERROR: R1 read file not found: $TRIM/${SAMPLE}_R1.fastq.gz" >&2
+    exit 1
+fi
+
+if [[ ! -f "$TRIM/${SAMPLE}_R2.fastq.gz" ]]; then
+    echo "[$(date)] ERROR: R2 read file not found: $TRIM/${SAMPLE}_R2.fastq.gz" >&2
+    exit 1
+fi
+
+echo "[$(date)] All required files located. Proceeding with $SAMPLE"
+
+# PREPARE CONTIGS >1000 bp
+echo "[$(date)] Copying and filtering contigs (>1000 bp)..."
+
+cp $ASM/$SAMPLE/${SAMPLE}.contigs.fa $ASM/02_CONTIGS/${SAMPLE}.contigs.fa
+
+samtools faidx $ASM/02_CONTIGS/${SAMPLE}.contigs.fa
+
+awk '$2 > 1000 {print $1}' \
+    $ASM/02_CONTIGS/${SAMPLE}.contigs.fa.fai \
+    > $ASM/02_CONTIGS/${SAMPLE}.contigs_gt1000.list
+
+samtools faidx \
+    $ASM/02_CONTIGS/${SAMPLE}.contigs.fa \
+    -r $ASM/02_CONTIGS/${SAMPLE}.contigs_gt1000.list \
+    > $ASM/02_CONTIGS/${SAMPLE}.contigs_gt1000.fa
+
+echo "[$(date)] Filtered contigs created for $SAMPLE"
+
+# BUILD BOWTIE2 INDEX
+echo "[$(date)] Building Bowtie2 index for $SAMPLE..."
+
+bowtie2-build --threads $SLURM_CPUS_PER_TASK \
+    $ASM/02_CONTIGS/${SAMPLE}.contigs_gt1000.fa \
+    $MAP/01_INDEX/${SAMPLE}_gt1000_index
+
+if [ $? -ne 0 ]; then
+    echo "[$(date)] ERROR: Bowtie2 index building failed for $SAMPLE" >&2
+    exit 1
+fi
+
+echo "[$(date)] Index building complete for $SAMPLE"
+
+# MAP READS
+echo "[$(date)] Mapping reads for $SAMPLE..."
+
+bowtie2 -x $MAP/01_INDEX/${SAMPLE}_gt1000_index \
+  -1 $TRIM/${SAMPLE}_R1.fastq.gz \
+  -2 $TRIM/${SAMPLE}_R2.fastq.gz \
+  --very-sensitive -N 1 \
+  --threads $SLURM_CPUS_PER_TASK \
+| samtools view -Sb - \
+| samtools sort -o $MAP/03_BAM_FILT/${SAMPLE}.sorted.bam
+
+if [ $? -ne 0 ]; then
+    echo "[$(date)] ERROR: Bowtie2 mapping/sorting failed for $SAMPLE" >&2
+    exit 1
+fi
+
+echo "[$(date)] Sorting complete for $SAMPLE"
+
+# ADD MD TAGS AND INDEX
+echo "[$(date)] Adding MD tags for $SAMPLE..."
+
+samtools calmd -b \
+    $MAP/03_BAM_FILT/${SAMPLE}.sorted.bam \
+    $ASM/02_CONTIGS/${SAMPLE}.contigs_gt1000.fa \
+    > $MAP/03_BAM_FILT/${SAMPLE}.sorted.calmd.bam
+
+samtools index $MAP/03_BAM_FILT/${SAMPLE}.sorted.calmd.bam
+
+if [ $? -eq 0 ]; then
+    echo "[$(date)] ===== SUCCESS! ====="
+    echo "[$(date)] Final BAM for $SAMPLE:"
+    echo "[$(date)] $MAP/03_BAM_FILT/${SAMPLE}.sorted.calmd.bam"
+else
+    echo "[$(date)] ERROR: MD tag addition or indexing failed for $SAMPLE" >&2
+    exit 1
+fi
