@@ -5,7 +5,7 @@
 #SBATCH --mem=120G
 #SBATCH --cpus-per-task=16
 #SBATCH --partition=longrun
-#SBATCH --array=1-30
+#SBATCH --array=1-30   #includes Taru's isolates too#
 #SBATCH --output=69_AUTOCYCLER/00_LOGS/autocycler_%A_%a_out.txt
 #SBATCH --error=69_AUTOCYCLER/00_LOGS/autocycler_%A_%a_err.txt
 
@@ -19,12 +19,9 @@ mkdir -p 69_AUTOCYCLER/00_LOGS
 export TMPDIR=/scratch/project_2014298/oztunaim/WGS/69_AUTOCYCLER/tmp_${SLURM_ARRAY_TASK_ID}
 mkdir -p $TMPDIR
 
-echo "============================================"
 echo "Autocycler Pipeline"
 echo "Job started at: $(date)"
 echo "Array task ID: $SLURM_ARRAY_TASK_ID"
-echo "============================================"
-echo ""
 
 AUTOCYCLER=/projappl/project_2014298/tykky_autocycler/bin/autocycler
 SAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" sample2_names.txt)
@@ -46,9 +43,9 @@ echo "Reads: $READS"
 echo "Output: $OUTDIR"
 echo ""
 
-#==============================================
-# STEP 1: Estimate genome size
-#==============================================
+
+# Estimate genome size
+
 echo "Step 1: Estimating genome size..."
 GENOME_SIZE=$($AUTOCYCLER helper genome_size --reads $READS --threads $THREADS)
 if [ $? -ne 0 ]; then
@@ -58,9 +55,9 @@ fi
 echo "  Estimated genome size: $GENOME_SIZE"
 echo ""
 
-#==============================================
-# STEP 2: Subsample reads into 4 files
-#==============================================
+
+#Subsample reads into 4 files
+
 echo "Step 2: Subsampling reads into 4 files..."
 $AUTOCYCLER subsample --reads $READS --out_dir $OUTDIR/subsampled_reads --genome_size $GENOME_SIZE
 if [ $? -ne 0 ]; then
@@ -70,9 +67,9 @@ fi
 echo "  Subsampling complete"
 echo ""
 
-#==============================================
-# STEP 3: Run all 6 assemblers on each subsample
-#==============================================
+
+#Run all 6 assemblers on each subsample
+
 mkdir -p $OUTDIR/assemblies
 echo "Step 3: Running assemblies with 6 assemblers (this will take some fuckin times)..."
 echo "Note: Individual assembly failures are normal and will be skipped"
@@ -162,16 +159,15 @@ fi
 echo "Continuing with $SUCCESS_COUNT assemblies (sufficient for consensus)"
 echo ""
 
-#==============================================
-# STEP 4: Remove subsampled reads to save space
-#==============================================
+
+#Remove subsampled reads to save space
+
 echo "Cleaning up subsampled reads to save disk space..."
 rm -f $OUTDIR/subsampled_reads/*.fastq
 echo ""
 
-#==============================================
-# STEP 5: Compress assemblies
-#==============================================
+#Compress assemblies
+
 echo "Step 4: Compressing assemblies into unitig graph..."
 $AUTOCYCLER compress -i $OUTDIR/assemblies -a $OUTDIR
 if [ $? -ne 0 ]; then
@@ -181,9 +177,9 @@ fi
 echo "  Compression complete"
 echo ""
 
-#==============================================
-# STEP 6: Cluster contigs
-#==============================================
+
+#Cluster contigs
+
 echo "Step 5: Clustering contigs..."
 $AUTOCYCLER cluster -a $OUTDIR
 if [ $? -ne 0 ]; then
@@ -193,9 +189,9 @@ fi
 echo "  Clustering complete"
 echo ""
 
-#==============================================
-# STEP 7: Trim and resolve each QC-pass cluster
-#==============================================
+
+#Trim and resolve each QC-pass cluster
+
 echo "Step 6 & 7: Trimming and resolving clusters..."
 CLUSTER_COUNT=0
 for c in $OUTDIR/clustering/qc_pass/cluster_*; do
@@ -216,9 +212,9 @@ else
 fi
 echo ""
 
-#==============================================
-# STEP 8: Combine into final assembly
-#==============================================
+
+#Combine into final assembly
+
 echo "Step 8: Combining into final consensus assembly..."
 $AUTOCYCLER combine -a $OUTDIR -i $OUTDIR/clustering/qc_pass/cluster_*/5_final.gfa
 if [ $? -ne 0 ]; then
@@ -228,9 +224,9 @@ fi
 echo "  Final assembly created"
 echo ""
 
-#==============================================
-# STEP 9: Quality assessment
-#==============================================
+
+#Quality assessment
+
 echo "Step 9: Quick quality check..."
 
 # Count contigs
@@ -243,21 +239,12 @@ echo "  Assembly size: $ASSEMBLY_SIZE bp"
 
 echo ""
 
-#==============================================
-# CLEANUP
-#==============================================
 echo "Cleaning up temporary files..."
 rm -rf $TMPDIR
 echo ""
 
-#==============================================
-# COMPLETION
-#==============================================
-echo "============================================"
 echo "Autocycler Pipeline Complete!"
 echo "Job finished at: $(date)"
-echo "============================================"
-echo ""
 echo "Assembly Summary:"
 echo "  Sample: $SAMPLE"
 echo "  Successful assemblies used: $SUCCESS_COUNT / 24"
