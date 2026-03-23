@@ -30,16 +30,6 @@ export TEMP=$TMPDIR
 export TMP=$TMPDIR
 mkdir -p "$TMPDIR"
 
-echo "============================================"
-echo "CheckM2 Genome Quality Assessment"
-echo "Sample: ${SAMPLE}"
-echo "Job ID: ${SLURM_JOB_ID}"
-echo "Array task ID: ${SLURM_ARRAY_TASK_ID}"
-echo "Job started at: $(date)"
-echo "Temp directory: ${TMPDIR}"
-echo "============================================"
-echo ""
-
 # Load CheckM2
 module load checkm2
 
@@ -67,8 +57,4 @@ echo ""
 # Clean up temp files
 rm -rf "${TMPDIR}"
 
-echo "============================================"
-echo "CheckM2 Complete for ${SAMPLE}"
-echo "Job finished at: $(date)"
-echo "============================================"
 
