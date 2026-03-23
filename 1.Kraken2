@@ -13,10 +13,10 @@
 
 name=$(sed -n ${SLURM_ARRAY_TASK_ID}p sample_names.txt)
 
-# Path to Kraken2 database
+#Path to Kraken2 database
 DB=/appl/data/bio/biodb/production/kraken/standard
 
-# Run Kraken2 for paired-end reads
+#Run Kraken2 for paired-end reads
 kraken2 \
   --db $DB \
   --threads $SLURM_CPUS_PER_TASK \
