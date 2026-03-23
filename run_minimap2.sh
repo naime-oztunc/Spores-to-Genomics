@@ -14,12 +14,6 @@ cd /scratch/project_2014298/oztunaim/WGS
 # Create directories
 mkdir -p 12_MAPPING/00_LOGS
 
-echo "============================================"
-echo "Minimap2 Read Mapping & Coverage Analysis"
-echo "Job started at: $(date)"
-echo "Array task ID: $SLURM_ARRAY_TASK_ID"
-echo "============================================"
-echo ""
 
 # Read sample name from isolate list
 SAMPLE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" sample2_names.txt)
@@ -54,9 +48,7 @@ echo ""
 # Load required modules
 module load biokit
 
-#==============================================
-# STEP 1: Map reads to assembly with Minimap2
-#==============================================
+
 echo "STEP 1: Mapping PacBio HiFi reads to assembly..."
 echo "Start time: $(date)"
 
@@ -72,9 +64,7 @@ echo "Mapping complete"
 echo "End time: $(date)"
 echo ""
 
-#==============================================
-# STEP 2: Index the BAM file
-#==============================================
+
 echo "STEP 2: Indexing BAM file..."
 
 samtools index $OUTDIR/${SAMPLE}.sorted.bam
@@ -82,9 +72,7 @@ samtools index $OUTDIR/${SAMPLE}.sorted.bam
 echo "Indexing complete"
 echo ""
 
-#==============================================
-# STEP 3: Generate mapping statistics
-#==============================================
+
 echo "STEP 3: Generating mapping statistics..."
 echo ""
 
@@ -111,9 +99,7 @@ echo ""
 echo "Statistics generated"
 echo ""
 
-#==============================================
-# STEP 4: Extract key metrics
-#==============================================
+
 echo "STEP 4: Extracting key metrics..."
 
 # Get total reads
@@ -140,14 +126,6 @@ echo "" | tee -a $OUTDIR/mapping_stats.txt
 echo "Metrics extracted"
 echo ""
 
-#==============================================
-# COMPLETION
-#==============================================
-echo "============================================"
-echo "Minimap2 Mapping Complete for $SAMPLE!"
-echo "Job finished at: $(date)"
-echo "============================================"
-echo ""
 echo "Results location: $OUTDIR"
 echo "BAM file: $OUTDIR/${SAMPLE}.sorted.bam"
 echo "Statistics: $OUTDIR/mapping_stats.txt"
