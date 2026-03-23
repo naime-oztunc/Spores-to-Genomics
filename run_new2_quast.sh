@@ -24,15 +24,6 @@ if [[ -z "${SAMPLE}" ]]; then
     exit 1
 fi
 
-echo "============================================"
-echo "QUAST Assembly Quality Assessment"
-echo "Sample: ${SAMPLE}"
-echo "Job ID: ${SLURM_JOB_ID}"
-echo "Array task ID: ${SLURM_ARRAY_TASK_ID}"
-echo "Job started at: $(date)"
-echo "============================================"
-echo ""
-
 # Load QUAST module
 module load quast
 
@@ -53,10 +44,4 @@ quast.py \
   -o "${OUTDIR}" \
   --threads 4
 
-echo ""
-echo "============================================"
-echo "QUAST Complete for ${SAMPLE}"
-echo "Job finished at: $(date)"
-echo "============================================"
-echo ""
 
