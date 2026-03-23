@@ -1,0 +1,67 @@
+#!/bin/bash -l
+#SBATCH --job-name=gtdbtk_bins
+#SBATCH --account=project_2014298
+#SBATCH --partition=longrun
+#SBATCH --time=08:00:00
+#SBATCH --cpus-per-task=10
+#SBATCH --mem=120G
+#SBATCH --array=1-36
+#SBATCH --output=00_LOGS/gtdbtk_%A_%a.out
+#SBATCH --error=00_LOGS/gtdbtk_%A_%a.err
+#SBATCH --gres=nvme:500
+
+set -euo pipefail
+
+module purge
+module load gtdbtk
+
+BASE=/scratch/project_2014298/oztunaim/META
+BIN_LIST=${BASE}/gtdbtk_genome_list.txt
+OUT_BASE=${BASE}/13_GTDBTK_OUT
+TMP_BASE=${BASE}/TMP
+
+mkdir -p ${OUT_BASE}
+mkdir -p ${TMP_BASE}
+
+
+mapfile -t BINS < ${BIN_LIST}
+BIN=${BINS[$((SLURM_ARRAY_TASK_ID-1))]}
+
+BIN_NAME=$(basename ${BIN} .fa)
+
+
+GENOME_DIR=${TMP_BASE}/gtdbtk_genomes_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}
+TMPDIR=${TMP_BASE}/gtdbtk_tmp_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}
+
+mkdir -p ${GENOME_DIR}
+mkdir -p ${TMPDIR}
+
+# Copy ONE genome only
+cp ${BIN} ${GENOME_DIR}/
+
+# Output directory
+OUTDIR=${OUT_BASE}/${BIN_NAME}
+mkdir -p ${OUTDIR}
+
+echo "Running GTDB-Tk on: ${BIN_NAME}"
+echo "Genome dir: ${GENOME_DIR}"
+echo "Temp dir: ${TMPDIR}"
+echo "Output dir: ${OUTDIR}"
+
+
+gtdbtk classify_wf \
+  --genome_dir ${GENOME_DIR} \
+  --out_dir ${OUTDIR} \
+  --extension fa \
+  --cpus ${SLURM_CPUS_PER_TASK} \
+  --tmpdir ${TMPDIR} \
+  --skip_ani_screen \
+  --force
+
+
+rm -rf ${GENOME_DIR}
+rm -rf ${TMPDIR}
+
+echo "Finished GTDB-Tk for ${BIN_NAME}"
+
+
